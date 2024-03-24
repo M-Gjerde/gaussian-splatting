@@ -204,8 +204,6 @@ namespace sibr {
 		/** \return radius used for trackball*/
 		float & getRadius() { return _radius; }
 
-	private:
-
 		int _currentCamId; ///< Current snapped camera ID.
 
 		bool _shouldSmooth; ///< Motion smoothing.

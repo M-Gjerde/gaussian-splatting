@@ -62,7 +62,6 @@ namespace sibr
 			return !_hidden;
 		}
 
-	private:
 		time_point							_lastFrameTime; ///< Last frame duration.
 		sibr::Vector2f						_position; ///< on screen position.
 		std::vector<float>					_frameTimes; ///< Last N frame times.

@@ -337,7 +337,7 @@ namespace sibr {
 		if (!_interpPath.empty()) {
 			unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPath) : i);
 			nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPath.size() - 1));
-			fromCamera(*_interpPath[nearestCam], true, false);
+			fromCamera(*_interpPath[nearestCam], false, false);
 		}
 	}
 
@@ -503,7 +503,7 @@ namespace sibr {
 		// Note this call has three modes: record (only read the arg camera) | playback (overwrite the arg camera) | do nothing (do nothing)
 		_cameraRecorder.use(_currentCamera);
 
-		_previousCamera = _currentCamera;
+		//_previousCamera = _currentCamera;
 		_clippingPlanes[0] = _currentCamera.znear();
 		_clippingPlanes[1] = _currentCamera.zfar();
 	}

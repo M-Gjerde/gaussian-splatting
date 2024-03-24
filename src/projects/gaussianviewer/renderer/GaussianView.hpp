@@ -83,9 +83,8 @@ namespace sibr {
 
 		bool* _dontshow;
 
-	protected:
 
-		std::string currMode = "Splats";
+		bool renderDisparity = false;
 
 		bool _cropping = false;
 		sibr::Vector3f _boxmin, _boxmax, _scenemin, _scenemax;

@@ -222,15 +222,27 @@ int main(int ac, char** av)
 	// Camera handler for main view.
 	sibr::InteractiveCameraHandler::Ptr generalCamera(new InteractiveCameraHandler());
 	generalCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
+	// Camera handler for main view.
+	sibr::InteractiveCameraHandler::Ptr stereoCamera(new InteractiveCameraHandler());
+	stereoCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 1000, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);	// Camera handler for main view.
 
+	sibr::InteractiveCameraHandler::Ptr disparityCamera(new InteractiveCameraHandler());
+	disparityCamera->setup(scene->cameras()->inputCameras(), Viewport(500, (float)usedResolution.y() * 6, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
 	// Add views to mvm.
 	MultiViewManager        multiViewManager(window, false);
 
 	if (myArgs.rendering_mode == 1) 
 		multiViewManager.renderingMode(IRenderingMode::Ptr(new StereoAnaglyphRdrMode()));
 	
-	multiViewManager.addIBRSubView("Point view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
-	multiViewManager.addCameraForView("Point view", generalCamera);
+	multiViewManager.addIBRSubView("Left view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	multiViewManager.addCameraForView("Left view", generalCamera);
+
+	multiViewManager.addIBRSubView("Right view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	multiViewManager.addCameraForView("Right view", stereoCamera);
+
+	multiViewManager.addIBRSubView("Disparity view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	multiViewManager.addCameraForView("Disparity view", disparityCamera);
+
 
 	// Top view
 	const std::shared_ptr<sibr::SceneDebugView> topView(new sibr::SceneDebugView(scene, generalCamera, myArgs));

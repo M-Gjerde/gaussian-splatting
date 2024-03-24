@@ -81,8 +81,6 @@ namespace sibr {
 		*/
 		virtual void onGUI(const std::string& suffix) override;
 
-	private:
-
 		float _speedFpsCam, _speedRotFpsCam; ///< Camera speeds.
 		bool _hasBeenInitialized; ///< Has the camera been initialized.
 		sibr::InputCamera _currentCamera; ///< Current camera.

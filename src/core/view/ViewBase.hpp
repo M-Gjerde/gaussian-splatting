@@ -117,7 +117,8 @@ namespace sibr
 
 		/** \return the name of the view. */
 		const std::string & name() const;
-		
+		std::string currMode = "Splats";
+
 	protected:
 		uint			_whichRT; ///< Selected RT id.
 		std::vector<RenderTargetLum::Ptr>	_masks; ///< Rendering masks that can beused by some views/renderers.

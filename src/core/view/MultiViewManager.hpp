@@ -206,7 +206,7 @@ namespace sibr
 		 * \param name the name of the subview to which the camera should be associated.
 		 * \param cameraHandler a pointer to the camera handler to register.
 		 */
-		void addCameraForView(const std::string & name, ICameraHandler::Ptr cameraHandler);
+		void addCameraForView(const std::string & name, InteractiveCameraHandler::Ptr cameraHandler);
 
 		/**
 		* \brief Register a function performing additional rendering for a given subview, 
@@ -249,7 +249,7 @@ namespace sibr
 		struct SubView {
 			ViewBase::Ptr view; ///< Pointer to the view.
 			RenderTargetRGB::Ptr rt; ///< Destination RT.
-			ICameraHandler::Ptr handler; ///< Potential camera handler.
+			InteractiveCameraHandler::Ptr handler; ///< Potential camera handler.
 			AdditionalRenderFunc renderFunc; ///< Optional additonal rendering function.
 			sibr::Viewport viewport; ///< Viewport in the global window.
 			ImGuiWindowFlags flags = 0; ///< ImGui flags.
@@ -366,7 +366,7 @@ namespace sibr
 		 *\param filename an optional filename, a timestamp will be appended
 		 *\note if the filename is empty, the name of the view is used, with a timestamp appended.
 		 **/
-		static void captureView(const SubView & view, const std::string & path = "./screenshots/", const std::string & filename = "");
+		static void captureView(const SubView & view, const std::string & path = "./screenshots/", const std::string & filename = "", bool disparity = false);
 		
 		IRenderingMode::Ptr _renderingMode = nullptr; ///< Rendering mode.
 		std::map<std::string, BasicSubView> _subViews; ///< Regular subviews.
@@ -383,6 +383,11 @@ namespace sibr
 		bool _showSubViewsGui = true; ///< Show the GUI of the subviews.
 		bool _onPause = false; ///< Paused interaction and update.
 		bool _enableGUI = true; ///< Should the GUI be enabled.
+
+		bool translateStereo = true;
+		bool saveNextFrame = false;
+		uint32_t frameCounter = 0;
+		Transform3<float> rightCameraPos;
 	};
 
 	/** A multiview manager is a multi-view system that displays its subviews in an OS window.

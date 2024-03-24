@@ -523,7 +523,8 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			nullptr,
 			rects,
 			boxmin,
-			boxmax
+			boxmax,
+			currMode == "Disparity"
 		);
 
 		if (!_interop_failed)
@@ -556,14 +557,16 @@ void sibr::GaussianView::onGUI()
 	const std::string guiName = "3D Gaussians";
 	if (ImGui::Begin(guiName.c_str())) 
 	{
-		if (ImGui::BeginCombo("Render Mode", currMode.c_str()))
-		{
+		if (ImGui::BeginCombo("Render Mode", currMode.c_str())) {
 			if (ImGui::Selectable("Splats"))
 				currMode = "Splats";
 			if (ImGui::Selectable("Initial Points"))
 				currMode = "Initial Points";
 			if (ImGui::Selectable("Ellipsoids"))
 				currMode = "Ellipsoids";
+			if (ImGui::Selectable("Disparity")){
+				currMode = "Disparity";
+		}
 			ImGui::EndCombo();
 		}
 	}
