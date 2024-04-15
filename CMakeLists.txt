@@ -9,17 +9,17 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.22)
 
-set (CMAKE_SYSTEM_VERSION 10.0.15063.0 CACHE INTERNAL "Cmake system version" FORCE)
+#set (CMAKE_SYSTEM_VERSION 10.0.15063.0 CACHE INTERNAL "Cmake system version" FORCE)
 PROJECT(sibr_projects)
 
-set(REQUIRED_VERSION "3.22.0")
-set(CHECKED_VERSION "3.27.0")
+#set(REQUIRED_VERSION "3.22.0")
+#set(CHECKED_VERSION "3.27.0")
 
-if (CMAKE_VERSION VERSION_LESS REQUIRED_VERSION)
-    message(WARNING "Deprecated version of cmake. Please update to at least ${REQUIRED_VERSION} (${CHECKED_VERSION} recommended).")
-elseif (CMAKE_VERSION VERSION_GREATER CHECKED_VERSION)
-	message(WARNING "Untested version of cmake. If you checked everything is working properly, please update ${CHECKED_VERSION} in the main CmakeLists.txt with the version you tested.")
-endif()
+#if (CMAKE_VERSION VERSION_LESS REQUIRED_VERSION)
+#    message(WARNING "Deprecated version of cmake. Please update to at least ${REQUIRED_VERSION} (${CHECKED_VERSION} recommended).")
+#elseif (CMAKE_VERSION VERSION_GREATER CHECKED_VERSION)
+#	message(WARNING "Untested version of cmake. If you checked everything is working properly, please update ${CHECKED_VERSION} in the main CmakeLists.txt with the version you tested.")
+#endif()
 
 ## Include cmake stuff (functions/macros) : Modules files
 if(WIN32)

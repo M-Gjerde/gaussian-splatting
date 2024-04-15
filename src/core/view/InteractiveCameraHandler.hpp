@@ -205,6 +205,7 @@ namespace sibr {
 		float & getRadius() { return _radius; }
 
 		int _currentCamId; ///< Current snapped camera ID.
+		int startCameraID; ///< Current snapped camera ID.
 
 		bool _shouldSmooth; ///< Motion smoothing.
 		bool _shouldSnap; ///< Currently snapping.

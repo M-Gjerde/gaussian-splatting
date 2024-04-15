@@ -118,6 +118,7 @@ namespace sibr
 		/** \return the name of the view. */
 		const std::string & name() const;
 		std::string currMode = "Splats";
+		float baseline = 1.0f;
 
 	protected:
 		uint			_whichRT; ///< Selected RT id.

@@ -17,6 +17,8 @@ source_group("Source Files" FILES ${SOURCES})
 file(GLOB RESOURCES "resources/*.ini")
 source_group("Resources Files" FILES ${RESOURCES})
 
+
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME}
 
@@ -32,6 +34,7 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_renderer
 	sibr_basic
 )
+
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "projects/gaussian/apps")
 
 ## High level macro to install in an homogen way all our ibr targets

@@ -524,7 +524,8 @@ void sibr::GaussianView::onRenderIBR(sibr::IRenderTarget & dst, const sibr::Came
 			rects,
 			boxmin,
 			boxmax,
-			currMode == "Disparity"
+			currMode == "Disparity",
+			baseline
 		);
 
 		if (!_interop_failed)

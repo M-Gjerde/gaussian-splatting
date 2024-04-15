@@ -29,7 +29,7 @@ Win3rdPartyGlobalCacheAction()
 find_package(OpenGL REQUIRED)
 
 set(OpenGL_GL_PREFERENCE "GLVND")
-
+set (OpenCV_DIR "/home/magnus/libraries/build")
 ############
 ## Find GLEW
 ############

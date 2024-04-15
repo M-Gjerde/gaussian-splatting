@@ -46,6 +46,10 @@ namespace sibr {
 		RequiredArg<std::string> modelPathShort = { "m", "Model directory" };
 		RequiredArg<std::string> iteration = { "iteration", "Iteration to load from model" };
 		RequiredArg<std::string> pathShort = {"s", "path to the dataset root"};
+		RequiredArg<std::string> sceneNumber = {"n", "scenenumber"};
+		RequiredArg<std::string> record = {"r", "record"};
+		RequiredArg<std::string> baseline = {"b", "baseline"};
+		RequiredArg<std::string> numImagesToGenerate = {"c", "numImagesToGenerate"};
 		Arg<int> device = {"device", 0, "CUDA device index"};
 		Arg<bool> loadImages = { "load_images", "Whether or not to load images for scene overview."};
 		Arg<bool> noInterop = { "no_interop", "Don't try to use interop (may be required for unconventional OpenGL setups, like WSL)" };

@@ -353,7 +353,7 @@ namespace sibr {
 			fromCamera(_currentCamera, false, true);
 			_triggerCameraUpdate = false;
 		}
-		if (input.key().isReleased(Key::N)) {
+		if (input.key().isReleased(Key::B)) {
 			_keyCameras.emplace_back(new InputCamera(getCamera()));
 		}
 
@@ -370,7 +370,7 @@ namespace sibr {
 			}
 		}
 		// only free key
-		else if (input.key().isReleased(sibr::Key::M)) {
+		else if (input.key().isReleased(sibr::Key::Q)) {
 			_cameraRecorder.saveImage("", _currentCamera, _currentCamera.w(), _currentCamera.h());
 		}
 		else if (input.key().isReleased(sibr::Key::Y)) {

@@ -241,7 +241,9 @@ namespace sibr
 		* \param filename the name of the output file, needs to have an OpenCV compatible file type.
 		*/
 		void captureView(const std::string& subviewName, const std::string& path = "./screenshots", const std::string& filename = "");
-	protected:
+
+		uint32_t sceneNumber;
+		uint32_t record = 0;
 
 		/** Internal representation of a subview.
 		 * Note: this representation should remain *internal* to the multi view system, avoid any abstraction leak.
@@ -337,8 +339,6 @@ namespace sibr
 			 void render(const IRenderingMode::Ptr & rm, const Viewport & renderViewport) const override;
 		};
 
-	protected:
-
 		/** Helper to add an IBR subview.
 		* \param title the title of the view.
 		* \param view a pointer to the view.
@@ -366,7 +366,7 @@ namespace sibr
 		 *\param filename an optional filename, a timestamp will be appended
 		 *\note if the filename is empty, the name of the view is used, with a timestamp appended.
 		 **/
-		static void captureView(const SubView & view, const std::string & path = "./screenshots/", const std::string & filename = "", bool disparity = false);
+		static void captureView(const SubView & view, const std::string & path = "./screenshots/", const std::string & filename = "", bool disparity = false, float baseline = 1.0);
 		
 		IRenderingMode::Ptr _renderingMode = nullptr; ///< Rendering mode.
 		std::map<std::string, BasicSubView> _subViews; ///< Regular subviews.
@@ -383,11 +383,18 @@ namespace sibr
 		bool _showSubViewsGui = true; ///< Show the GUI of the subviews.
 		bool _onPause = false; ///< Paused interaction and update.
 		bool _enableGUI = true; ///< Should the GUI be enabled.
+		int startCameraID; ///< Current snapped camera ID.
+		int numImagesToGenerate; ///< Current snapped camera ID.
 
-		bool translateStereo = true;
+		bool translateStereo = false;
+		bool revertStereo = false;
 		bool saveNextFrame = false;
+		bool autoRecord = true;
+		uint32_t savedStereoFrames = 0;
 		uint32_t frameCounter = 0;
-		Transform3<float> rightCameraPos;
+		Transform3<float> rightCameraTransform;
+		float baselines[3] = {0};
+		int baselineIndex = 0;
 	};
 
 	/** A multiview manager is a multi-view system that displays its subviews in an OS window.
@@ -430,7 +437,6 @@ namespace sibr
 		Window& _window; ///< The OS window.
 		FPSCounter _fpsCounter; ///< A FPS counter.
 		bool _showGUI = true; ///< Should the GUI be displayed.
-
 	};
 
 	///// INLINE /////

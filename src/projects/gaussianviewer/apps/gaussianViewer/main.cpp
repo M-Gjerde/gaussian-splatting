@@ -118,7 +118,6 @@ int main(int ac, char** av)
 	uint win_height = rendering_height; // myArgs.win_height;
 
 	const char* toload = myArgs.modelPath.get().c_str();
-
 	// Window setup
 	sibr::Window		window(PROGRAM_NAME, sibr::Vector2i(50, 50), myArgs, getResourcesDirectory() + "/gaussians/" + PROGRAM_NAME + ".ini");
 
@@ -211,37 +210,88 @@ int main(int ac, char** av)
 	const unsigned int sceneResWidth = usedResolution.x();
 	const unsigned int sceneResHeight = usedResolution.y();
 
+	std::string str = myArgs.baseline;
+
+	std::vector<float> baselines;
+	std::stringstream ss(str);
+	std::string item;
+
+	auto remove_non_numeric = [](char ch) -> bool {
+		return !std::isdigit(ch) && ch != '.' && ch != '-';
+	};
+
+	while (std::getline(ss, item, ',')) {
+		// Trim potential whitespace
+		item.erase(0, item.find_first_not_of(" \t\n\r\f\v'"));
+		item.erase(item.find_last_not_of(" \t\n\r\f\v'") + 1);
+
+		// Remove any non-numeric characters (this includes leading or trailing quotes if they were not caught by trim)
+		item.erase(std::remove_if(item.begin(), item.end(), remove_non_numeric), item.end());
+
+		try {
+			// Convert string to float and add to the vector
+			baselines.push_back(std::stof(item));
+		} catch (const std::invalid_argument& e) {
+			std::cerr << "Invalid argument: " << item << std::endl;
+			return 1;
+		} catch (const std::out_of_range& e) {
+			std::cerr << "Out of range: " << item << std::endl;
+			return 1;
+		}
+	}
+
+	// Convert the vector to a C-style array if needed
+	float baselineArray[3] = {};
+	if (baselines.size() >= 3) {
+		std::copy(baselines.begin(), baselines.begin() + 3, baselineArray);
+	} else {
+		std::cerr << "Error: Not enough baselines provided." << std::endl;
+		return 1; // Exit with an error code
+	}
+
 	// Create the ULR view.
-	GaussianView::Ptr	gaussianView(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, sh_degree, white_background, !myArgs.noInterop, device));
+	GaussianView::Ptr	gaussianViewLeft(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, sh_degree, white_background, !myArgs.noInterop, device));
+	//GaussianView::Ptr	gaussianViewRight(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, sh_degree, white_background, !myArgs.noInterop, device));
+	//GaussianView::Ptr	gaussianViewDisparity(new GaussianView(scene, sceneResWidth, sceneResHeight, plyfile.c_str(), &messageRead, sh_degree, white_background, !myArgs.noInterop, device));
 
 	// Raycaster.
 	std::shared_ptr<sibr::Raycaster> raycaster = std::make_shared<sibr::Raycaster>();
 	raycaster->init();
 	raycaster->addMesh(scene->proxies()->proxy());
 
-	// Camera handler for main view.
+	// Camera handler for main view.|
 	sibr::InteractiveCameraHandler::Ptr generalCamera(new InteractiveCameraHandler());
 	generalCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
 	// Camera handler for main view.
 	sibr::InteractiveCameraHandler::Ptr stereoCamera(new InteractiveCameraHandler());
-	stereoCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 1000, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);	// Camera handler for main view.
+	stereoCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);	// Camera handler for main view.
 
 	sibr::InteractiveCameraHandler::Ptr disparityCamera(new InteractiveCameraHandler());
-	disparityCamera->setup(scene->cameras()->inputCameras(), Viewport(500, (float)usedResolution.y() * 6, (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
+	disparityCamera->setup(scene->cameras()->inputCameras(), Viewport(0, 0 , (float)usedResolution.x(), (float)usedResolution.y()), nullptr);
 	// Add views to mvm.
 	MultiViewManager        multiViewManager(window, false);
+	multiViewManager.sceneNumber = 	std::stoi(myArgs.sceneNumber);;
+	multiViewManager.autoRecord = 	std::stoi(myArgs.record) == 1;
 
-	if (myArgs.rendering_mode == 1) 
+
+
+	multiViewManager.baselines[0] = baselineArray[0];
+	multiViewManager.baselines[1] = baselineArray[1];
+	multiViewManager.baselines[2] = baselineArray[2];
+
+	if (myArgs.rendering_mode == 1)
 		multiViewManager.renderingMode(IRenderingMode::Ptr(new StereoAnaglyphRdrMode()));
-	
-	multiViewManager.addIBRSubView("Left view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+
+	multiViewManager.addIBRSubView("Disparity view", gaussianViewLeft, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	multiViewManager.addCameraForView("Disparity view", disparityCamera);
+
+
+	multiViewManager.addIBRSubView("Left view", gaussianViewLeft, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
 	multiViewManager.addCameraForView("Left view", generalCamera);
 
-	multiViewManager.addIBRSubView("Right view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	multiViewManager.addIBRSubView("Right view", gaussianViewLeft, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
 	multiViewManager.addCameraForView("Right view", stereoCamera);
-
-	multiViewManager.addIBRSubView("Disparity view", gaussianView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide | ImGuiWindowFlags_NoBringToFrontOnFocus);
-	multiViewManager.addCameraForView("Disparity view", disparityCamera);
 
 
 	// Top view
@@ -251,7 +301,7 @@ int main(int ac, char** av)
 	topView->active(false);
 
 	// save images
-	generalCamera->getCameraRecorder().setViewPath(gaussianView, myArgs.dataset_path.get());
+	generalCamera->getCameraRecorder().setViewPath(gaussianViewLeft, myArgs.dataset_path.get());
 	if (myArgs.pathFile.get() !=  "" ) 
 	{
 		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
@@ -260,6 +310,10 @@ int main(int ac, char** av)
 			exit(0);
 	}
 
+	for (auto &view: multiViewManager._ibrSubViews) {
+	}
+
+	multiViewManager.numImagesToGenerate = std::stoi(myArgs.numImagesToGenerate);
 	// Main looooooop.
 	while (window.isOpened()) 
 	{

@@ -31,6 +31,13 @@ namespace sibr {
             saveNextFrame = true;
         }
 
+        if (input.key().isPressed(Key::M)) {
+            revertStereo = true;
+        }
+        if (input.key().isPressed(Key::H)) {
+            translateStereo = true;
+        }
+
         if (input.key().isActivated(Key::LeftControl) && input.key().isPressed(Key::LeftAlt) && input.key().
             isPressed(Key::P)) {
             _onPause = !_onPause;
@@ -90,12 +97,16 @@ namespace sibr {
             if (subview.second.view->active()) {
                 if (subview.first == "Right view") {
                     if (translateStereo) {
-
-                        float baseline = 1.0f;
-                        Vector3f translate = {baseline, 0.0f, 0.0f};
+                        subview.second.view->baseline = baselines[baselineIndex];
+                        Vector3f translate = {baselines[baselineIndex], 0.0f, 0.0f};
                         subview.second.handler->_fpsCamera._currentCamera.translate(
                             translate, subview.second.handler->_fpsCamera._currentCamera.transform());
                         translateStereo = false;
+                    }
+                    if (revertStereo) {
+                        subview.second.handler->_fpsCamera._currentCamera.transform(rightCameraTransform);
+                        translateStereo = false;
+                        revertStereo = false;
                     }
                 }
 
@@ -320,8 +331,29 @@ namespace sibr {
         }
     }
 
+    float inverseCustomSoftClamp(float scaledDisparity, float focusRangeStart, float focusRangeEnd,
+                                 float maxDisparityValue) {
+        // Step 1: Inverse scale from the clamped value to [0, 1]
+        float clampedValue = scaledDisparity / maxDisparityValue;
+
+        // Step 2: Inverse of the sigmoid function
+        float alpha = 1.0f; // This needs to match the alpha used in customSoftClamp
+        // Solve for x in the sigmoid equation: clampedValue = 1 / (1 + exp(-alpha * (x - 0.5)))
+        float expTerm = log(clampedValue / (1.0f - clampedValue));
+        float normalizedX = (expTerm / alpha) + 0.5f;
+
+        // Step 3: Inverse normalization to get the disparity value in the original scale
+        float x = normalizedX * (focusRangeEnd - focusRangeStart) + focusRangeStart;
+
+        // Assuming this value needs to be further processed to match the original disparity calculation
+        // Note: This step might need adjustment based on how the original disparity is used or interpreted in your application
+        return x;
+        // This is the disparity value normalized within the specified focus range [focusRangeStart, focusRangeEnd]
+    }
+
+
     void MultiViewBase::captureView(const SubView &view, const std::string &path, const std::string &filename,
-                                    bool disparity) {
+                                    bool disparity, float baseline) {
         const uint w = view.rt->w();
         const uint h = view.rt->h();
         ImageRGB renderingImg(w, h);
@@ -343,20 +375,38 @@ namespace sibr {
             // Use CV_16U for 16-bit unsigned integers.
             cv::Mat decodedDisparity(img.rows, img.cols, CV_32F);
 
+            double focalLength = 890.667847f;
+
             for (int y = 0; y < img.rows; ++y) {
                 for (int x = 0; x < img.cols; ++x) {
                     // Extract R and G values
-                    cv::Vec3b pixel = img.at<cv::Vec3b>(y, x); // Using Vec3b as png is typically loaded in 3 channels
+                    cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
                     unsigned char r = pixel[2]; // R channel
                     unsigned char g = pixel[1]; // G channel
-
+                    unsigned char b = pixel[0]; // B channel
                     // Combine R and G to form the 16-bit value
                     // Shift R to the high bits and add G to the low bits
-                    unsigned int disparityValue = (r << 8) | g;
-                    float val_scaled = (disparityValue / 65535.0f) * 255.0f;
+                    unsigned int scaledDisparity = (r << 16) | (g << 8) | b;
+
+                    //float originalDisparity = inverseCustomSoftClamp(scaledDisparity, 35.0f, maxDisparity, maxDisparityValue);
+                    double originalDisparity = 0;
+                    if (baseline < 3) {
+                        double maxDisparityValue = pow(2, 8) - 1;
+                        double maxDisparity = 1;
+                        originalDisparity = (scaledDisparity / maxDisparityValue) / 2.5;
+
+                    } else if (baseline > 3 && baseline < 9) {
+                        double maxDisparityValue = pow(2, 8) - 1;
+                        originalDisparity = (scaledDisparity / maxDisparityValue);
+                    } else {
+                        double maxDisparity = 700.0;
+                        double maxDisparityValue = pow(2, 24) - 1;
+                        originalDisparity = scaledDisparity / maxDisparityValue * maxDisparity;
+                    }
+
                     // Store the combined value in the decoded disparity image
 
-                    decodedDisparity.at<float>(y, x) = static_cast<float>(val_scaled);
+                    decodedDisparity.at<float>(y, x) = static_cast<float>(originalDisparity);
                 }
             }
             std::string decoded_path = path + (!path.empty() ? "/" : "");
@@ -364,6 +414,13 @@ namespace sibr {
                 decoded_path.append(filename + "_decoded.tiff");
             }
             cv::imwrite(decoded_path, decodedDisparity);
+
+            // Delete the image file
+            if (std::remove(finalPath.c_str()) != 0) {
+                std::cerr << "Error: Unable to delete the file at " << finalPath << std::endl;
+            } else {
+                std::cout << "File successfully deleted: " << finalPath << std::endl;
+            }
         }
     }
 
@@ -507,18 +564,20 @@ namespace sibr {
         MultiViewBase::onGui(win);
         //auto& view = _ibrSubViews["Stereo view"];
         //view.handler->_fpsCamera._currentCamera.translate(translate, view.handler->_fpsCamera._currentCamera.transform());
-        if (frameCounter % 15 == 0)
-            saveNextFrame = false;
+        if (autoRecord && frameCounter % 5 == 0)
+            saveNextFrame = true;
 
         if (frameCounter < 10) {
             for (auto &view: _ibrSubViews) {
                 view.second.handler->snapToCamera(0);
-                view.second.handler->_currentCamId = 0;
+                translateStereo = true;
             }
         }
 
-        if (saveNextFrame && frameCounter != 0) {
+
+        if (saveNextFrame && frameCounter > 10) {
             for (auto &view: _ibrSubViews) {
+
                 //view.second.handler->getCamera().loadColmap();
                 view.second.handler->snapToCamera(view.second.handler->_currentCamId);
                 std::string path;
@@ -526,19 +585,85 @@ namespace sibr {
                     path = "disparity";
                 else if (view.first == "Right view") {
                     path = "right";
-                    rightCameraPos = view.second.handler->_fpsCamera._currentCamera.transform();
-
-                }
-                else
+                    rightCameraTransform = view.second.handler->_fpsCamera._currentCamera.transform();
+                } else
                     path = "left";
 
-                captureView(view.second, _exportPath + "/" + path, (std::to_string(view.second.handler->_currentCamId)),
-                            view.first == "Disparity view");
+                // Create an output string stream
+                std::ostringstream formattedNumber;
+
+                // Apply manipulators to format the number
+                // std::setw(4) ensures the string has a width of 4 characters
+                // std::setfill('0') fills the unused spaces with '0'
+                formattedNumber << std::setw(4) << std::setfill('0') << sceneNumber;
+
+                // Convert to string
+                std::string sceneNumberStr = formattedNumber.str();
+                std::string outputFolder = _exportPath + "/" + sceneNumberStr + "/" + path;
+                captureView(view.second, outputFolder, (std::to_string(savedStereoFrames)),
+                            view.first == "Disparity view", baselines[baselineIndex]);
+
                 view.second.handler->_currentCamId += 1;
 
+                if (view.second.handler->_currentCamId >= 100) {
+                    view.second.handler->_currentCamId = 0;
+                }
             }
+
+
+            if (savedStereoFrames % numImagesToGenerate == 0 && savedStereoFrames != 0) {
+                baselineIndex++;
+
+                if (baselineIndex > 2)
+                    baselineIndex = 2;
+            }
+
+            savedStereoFrames++;
             translateStereo = true;
             saveNextFrame = false;
+        }
+
+        if (savedStereoFrames > (numImagesToGenerate * 3)) {
+
+            for (auto &view: _ibrSubViews) {
+                //view.second.handler->getCamera().loadColmap();
+                std::string path;
+                if (view.first == "Disparity view")
+                    path = "disparity";
+                else if (view.first == "Right view") {
+                    path = "right";
+                } else
+                    path = "left";
+
+                // Create an output string stream
+                std::ostringstream formattedNumber;
+
+                // Apply manipulators to format the number
+                // std::setw(4) ensures the string has a width of 4 characters
+                // std::setfill('0') fills the unused spaces with '0'
+                formattedNumber << std::setw(4) << std::setfill('0') << sceneNumber;
+                // Convert to string
+                std::string sceneNumberStr = formattedNumber.str();
+                std::string outputFolder = _exportPath + "/" + sceneNumberStr + "/" + path;
+                std::string fileName = "0";
+
+                std::string finalPath = outputFolder + (!outputFolder.empty() ? "/" : "");
+                if (view.first == "Disparity view") {
+                    finalPath.append(fileName + "_decoded.tiff");
+
+                }else {
+                    finalPath.append(fileName + ".png");
+
+                }
+                    // Delete the image file
+                    if (std::remove(finalPath.c_str()) != 0) {
+                        std::cerr << "Error: Unable to delete the file at " << finalPath << std::endl;
+                    } else {
+                        std::cout << "File successfully deleted: " << finalPath << std::endl;
+                    }
+            }
+
+            exit(0);
         }
 
 
